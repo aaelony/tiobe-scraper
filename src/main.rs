@@ -23,7 +23,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .select(&Selector::parse("tr").unwrap())
             .map(|tr| {
                 tr.select(&Selector::parse("td").unwrap())
-                    .map(|td| td.text().collect::<String>().trim().to_string())
+                    .flat_map(|td| match td.value().classes().any(|c| c == "td-top20") {
+                        true => None,
+                        false => Some(match td.inner_html() {
+                            html if html.contains("up.png") => "up".to_string(),
+                            html if html.contains("down.png") => "down".to_string(),
+                            _ => td.text().collect::<String>().trim().to_string(),
+                        }),
+                    })
                     .collect()
             })
             .filter(|row: &Vec<String>| !row.is_empty())
